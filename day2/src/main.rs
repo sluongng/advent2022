@@ -7,11 +7,12 @@ C Z
     .trim()
     .split("\n")
     .map(|line| line.split(" "))
+    // only care about first 2 tokens
+    .map(|tokens| tokens.take(2))
     .map(|mut tokens| {
         let first_move = tokens.next().unwrap();
         let second_move = tokens.next().unwrap();
 
-        // expecting exact 2 tokens
         (first_move, second_move)
     })
     .map(|(first_move, second_move)| match first_move {
