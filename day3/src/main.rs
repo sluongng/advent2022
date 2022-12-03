@@ -1,4 +1,3 @@
-use std::collections::HashMap;
 use std::collections::HashSet;
 
 fn main() {
@@ -31,39 +30,14 @@ CrZsJsPPZsGzwwsLwLmpwMDw
     .iter()
     // Find a common badge between 3 lines inside a group
     .map(|g| {
-        // There is not a good way to tell Rust that we gona have
-        // a guarentee matched in 3 loops.
-        // So init result value with a dummy character to satisfy Rust.
-        let mut res = 'a';
-        let mut item_count = HashMap::new();
-
-        // Run through each line and add all chars into a Set to ensure uniqueness
-        // Then add items from the Set into a Map with counter value
-        // When we reach last line(3rd line), break on the first char with 3 counts
-        //
-        // TODO: rewrite in functional style?
-        'group_loop: for line in g {
-            for c in line.chars().collect::<HashSet<char>>() {
-                // add char to counter map
-                item_count
-                    .entry(c)
-                    .and_modify(|counter| *counter += 1)
-                    .or_insert(1);
-
-                // check counter
-                match item_count.get(&c) {
-                    Some(counter) => {
-                        if *counter >= 3 {
-                            res = c;
-                            break 'group_loop;
-                        }
-                    }
-                    None => {}
-                }
-            }
-        }
-
-        res
+        g.iter()
+            .map(|line| line.chars().collect::<HashSet<char>>())
+            .reduce(|acc, h| acc.intersection(&h).map(|h| *h).collect())
+            .unwrap()
+            .iter()
+            .next()
+            .unwrap()
+            .clone()
     })
     // calculate value of each badge
     .map(|b| (b, b.to_digit(36).unwrap() - 'a'.to_digit(36).unwrap() + 1))
