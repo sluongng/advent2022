@@ -22,10 +22,7 @@ CrZsJsPPZsGzwwsLwLmpwMDw
 
 // Fold the lines into a big group,
 // where each group is a vector of 3 lines.
-fn groups_of_three<'a, 'b>(mut groups: Vec<Vec<&'a str>>, line: &'b str) -> Vec<Vec<&'a str>>
-where
-    'b: 'a,
-{
+fn groups_of_three<'a>(mut groups: Vec<Vec<&'a str>>, line: &'a str) -> Vec<Vec<&'a str>> {
     match groups.last_mut() {
         None => groups.push(vec![line]),
         Some(g) => {
@@ -45,12 +42,16 @@ fn group_to_badge(group: &Vec<&str>) -> char {
     group
         .iter()
         .map(|line| line.chars().collect::<HashSet<char>>())
-        .reduce(|acc, h| acc.intersection(&h).map(|h| *h).collect())
+        .reduce(set_of_commons)
         .unwrap()
         .iter()
         .next()
         .unwrap()
         .clone()
+}
+
+fn set_of_commons(set1: HashSet<char>, set2: HashSet<char>) -> HashSet<char> {
+    set1.intersection(&set2).map(|h| *h).collect()
 }
 
 fn badge_to_priority(b: char) -> u32 {
