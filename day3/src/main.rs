@@ -41,7 +41,7 @@ fn groups_of_three<'a>(mut groups: Vec<Vec<&'a str>>, line: &'a str) -> Vec<Vec<
 fn group_to_badge(group: &Vec<&str>) -> char {
     group
         .iter()
-        .map(|line| line.chars().collect::<HashSet<char>>())
+        .map(unique_char_set)
         .reduce(set_of_commons)
         .unwrap()
         .iter()
@@ -50,12 +50,17 @@ fn group_to_badge(group: &Vec<&str>) -> char {
         .clone()
 }
 
+fn unique_char_set(line: &&str) -> HashSet<char> {
+    line.chars().collect::<HashSet<char>>()
+}
+
 fn set_of_commons(set1: HashSet<char>, set2: HashSet<char>) -> HashSet<char> {
     set1.intersection(&set2).map(|h| *h).collect()
 }
 
 fn badge_to_priority(b: char) -> u32 {
     let p = b.to_digit(36).unwrap() - 'a'.to_digit(36).unwrap() + 1;
+
     if b.is_uppercase() {
         p + 26
     } else {
