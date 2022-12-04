@@ -29,7 +29,7 @@ fn main() {
         let second_a = second.next().unwrap().ok().unwrap();
         let second_b = second.next().unwrap().ok().unwrap();
 
-        !(first_a > second_b || first_b < second_a)
+        first_a <= second_b && first_b >= second_a
     })
     .filter(|x| *x)
     .count();
