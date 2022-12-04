@@ -10,29 +10,21 @@ fn main() {
     .trim()
     .split("\n")
     .map(|line| line.split(",").take(2))
-    .map(|mut halves| {
-        let mut first = halves
-            .next()
-            .unwrap()
-            .split("-")
-            .take(2)
-            .map(|position| position.parse::<i32>());
-        let mut second = halves
-            .next()
-            .unwrap()
-            .split("-")
-            .take(2)
-            .map(|position| position.parse::<i32>());
-
-        let first_a = first.next().unwrap().ok().unwrap();
-        let first_b = first.next().unwrap().ok().unwrap();
-        let second_a = second.next().unwrap().ok().unwrap();
-        let second_b = second.next().unwrap().ok().unwrap();
-
-        first_a <= second_b && first_b >= second_a
-    })
+    .map(|halves| halves.map(half_to_pos).collect::<Vec<Vec<i32>>>())
+    .map(is_overlap)
     .filter(|x| *x)
     .count();
 
     println!("{}", output);
+}
+
+fn half_to_pos(half: &str) -> Vec<i32> {
+    half.split("-")
+        .take(2)
+        .map(|position| position.parse::<i32>().unwrap())
+        .collect::<Vec<i32>>()
+}
+
+fn is_overlap(positions: Vec<Vec<i32>>) -> bool {
+    positions[0][0] <= positions[1][1] && positions[0][1] >= positions[1][0]
 }
