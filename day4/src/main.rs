@@ -18,6 +18,10 @@ fn main() {
     println!("{}", output);
 }
 
+// half_to_pos take a string of half the line and return the parsed coordinates
+//
+// Example:
+//   "2-4" -> !vec[2, 4]
 fn half_to_pos(half: &str) -> Vec<i32> {
     half.split("-")
         .take(2)
