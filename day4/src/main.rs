@@ -29,17 +29,7 @@ fn main() {
         let second_a = second.next().unwrap().ok().unwrap();
         let second_b = second.next().unwrap().ok().unwrap();
 
-        let first_size = first_b - first_a;
-        let second_size = second_b - second_a;
-
-        let mut smaller = (first_a, first_b);
-        let mut bigger = (second_a, second_b);
-
-        if first_size > second_size {
-            (smaller, bigger) = (bigger, smaller);
-        }
-
-        smaller.0 >= bigger.0 && smaller.1 <= bigger.1
+        !(first_a > second_b || first_b < second_a)
     })
     .filter(|x| *x)
     .count();
