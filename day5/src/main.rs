@@ -1,5 +1,6 @@
 fn main() {
-    let temp_input = "    [D]    
+    let inputs = vec![
+        "    [D]    
 [N] [C]    
 [Z] [M] [P]
  1   2   3 
@@ -7,9 +8,8 @@ fn main() {
 move 1 from 2 to 1
 move 3 from 1 to 3
 move 2 from 2 to 1
-move 1 from 1 to 2";
-
-    let real_input = "        [J]         [B]     [T]    
+move 1 from 1 to 2",
+        "        [J]         [B]     [T]    
         [M] [L]     [Q] [L] [R]    
         [G] [Q]     [W] [S] [B] [L]
 [D]     [D] [T]     [M] [G] [V] [P]
@@ -519,9 +519,10 @@ move 12 from 6 to 7
 move 1 from 8 to 2
 move 10 from 3 to 4
 move 2 from 3 to 5
-move 1 from 3 to 1";
+move 1 from 3 to 1",
+    ];
 
-    let blocks = real_input
+    let blocks = inputs[1]
         .split("\n\n")
         .take(2)
         .map(|block| block.split("\n").collect::<Vec<_>>())
@@ -557,10 +558,12 @@ move 1 from 3 to 1";
         let from_stack = tokens[3].parse::<usize>().unwrap() - 1;
         let to_stack = tokens[5].parse::<usize>().unwrap() - 1;
 
+        let mut temp = vec![];
         for _ in 0..count {
             let val = stacks[from_stack].pop().unwrap();
-            stacks[to_stack].push(val);
+            temp.push(val);
         }
+        stacks[to_stack].extend(temp.iter().rev());
     }
 
     for s in stacks {
