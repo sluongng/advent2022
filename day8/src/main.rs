@@ -119,32 +119,47 @@ fn main() {
     })
     .collect::<Vec<_>>();
 
-    let mut count = 0;
+    let mut max_score = 0;
     for (i, line) in input.iter().enumerate() {
-        for (j, tree) in line.iter().enumerate() {
+        for (j, &tree) in line.iter().enumerate() {
+            let mut score = 1;
+
             // is border
             if i == 0 || i == input.len() - 1 || j == 0 || j == line.len() - 1 {
-                count += 1;
                 continue;
             }
 
-            let vecs = vec![
+            for v in vec![
+                // horizontal
                 line[(j + 1)..].iter().map(|&x| x).collect::<Vec<_>>(),
-                line[..j].iter().map(|&x| x).collect::<Vec<_>>(),
+                line[..j].iter().rev().map(|&x| x).collect::<Vec<_>>(),
+                // vertical
                 input[(i + 1)..]
                     .iter()
                     .map(|line| line[j])
                     .collect::<Vec<_>>(),
-                input[..i].iter().map(|line| line[j]).collect::<Vec<_>>(),
-            ];
-            for v in vecs {
-                if tree > v.iter().max().unwrap() {
+                input[..i]
+                    .iter()
+                    .rev()
+                    .map(|line| line[j])
+                    .collect::<Vec<_>>(),
+            ] {
+                let mut count = 0;
+
+                for i in v {
                     count += 1;
-                    break;
+
+                    if i >= tree {
+                        break;
+                    }
                 }
+
+                score *= count;
             }
+
+            max_score = score.max(max_score);
         }
     }
 
-    println!("{:?}", count);
+    println!("{:?}", max_score);
 }
