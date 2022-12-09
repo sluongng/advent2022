@@ -35,18 +35,18 @@ impl Knot {
     }
 
     fn tail_move_toward(&mut self, head: Knot) {
-        let dis = head.distance(self);
+        let (dis_x, dis_y) = head.distance(self);
 
         // If 'new Head' and 'old Tail' are within the boundary of +/-1
         // then we don't need to move tail
-        if cmp::max(dis.0.abs(), dis.1.abs()) <= 1 {
+        if cmp::max(dis_x.abs(), dis_y.abs()) <= 1 {
             return;
         }
 
         // Otherwise, move Tail at most 1 unit vertically and/or
         // horizontally, each, toward Head based on the calculated distance.
-        self.x += dis.0.clamp(-1, 1);
-        self.y += dis.1.clamp(-1, 1);
+        self.x += dis_x.clamp(-1, 1);
+        self.y += dis_y.clamp(-1, 1);
     }
 }
 
