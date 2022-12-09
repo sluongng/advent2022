@@ -1,14 +1,14 @@
 use std::collections::HashSet;
 
-#[derive(Debug)]
-struct Knots {
+#[derive(Debug, Clone)]
+struct Knot {
     x: i32,
     y: i32,
 }
 
-impl Knots {
+impl Knot {
     fn new(x: i32, y: i32) -> Self {
-        Knots { x, y }
+        Knot { x, y }
     }
 
     fn move_with_direction(&mut self, direction: &str) {
@@ -34,6 +34,42 @@ impl Knots {
     }
 }
 
+// used during debug to visualize the movement of the knots
+#[allow(dead_code)]
+fn visualize_knots(knots: &Vec<Knot>) {
+    let min_x = -20;
+    let max_x = 20;
+    let min_y = -20;
+    let max_y = 20;
+
+    println!("");
+    for y in (min_y..=max_y).rev() {
+        let mut line = format!("{: >3}", y);
+        for x in min_x..=max_x {
+            let mut add = ".".to_owned();
+
+            for k in 0..knots.len() {
+                if x == knots[k].x && y == knots[k].y {
+                    if k == 0 {
+                        add = "H".to_owned();
+                        break;
+                    }
+
+                    add = k.to_string();
+                }
+
+                if x == 0 && y == 0 {
+                    add = "s".to_owned();
+                }
+            }
+
+            line += &add;
+        }
+
+        println!("{}", line)
+    }
+}
+
 fn main() {
     let input = vec![
         "R 4
@@ -44,6 +80,14 @@ R 4
 D 1
 L 5
 R 2",
+        "R 5
+U 8
+L 8
+D 3
+R 17
+D 10
+L 25
+U 20",
         "U 2
 D 2
 R 2
@@ -2045,7 +2089,8 @@ U 17
 D 15
 U 19",
     ]
-    .last()
+    .iter()
+    .nth(2)
     .unwrap()
     .split("\n")
     .map(|line| {
@@ -2057,76 +2102,119 @@ U 19",
     })
     .collect::<Vec<_>>();
 
-    let mut head = Knots::new(0, 0);
-    let mut tail = Knots::new(0, 0);
-
     let mut unique_tail_pos = HashSet::new();
+    let mut knots = vec![Knot::new(0, 0).clone(); 10];
 
     for (direction, count) in input {
-        println!("\nMove: {} - {}\n", direction, count);
-
         for _ in 0..count {
-            head.move_with_direction(direction);
-            let dis = head.distance(&tail);
-
-            println!("BEFORE");
-            println!("H: {:?}", head);
-            println!("T: {:?}", tail);
-            println!("Distance: {:?}", dis);
-
-            match dis {
-                // Head moves away from Tail so Tail should copy the same move to catch up
-                (0, 2) | (-2, 0) | (0, -2) | (2, 0) => {
-                    tail.move_with_direction(direction);
+            for i in 0..knots.len() {
+                // head moves normally
+                if i == 0 {
+                    knots[i].move_with_direction(direction);
+                    continue;
                 }
 
-                // Head could be in a Knight-Chess position away from tail after the move
-                // shown below in coordinates.
-                //
-                // |         | (-1, 2) |         | ( 1, 2) |         |
-                // | (-2, 1) |    X    |         |    X    | ( 2, 1) |
-                // |         |         |    O    |         |         |
-                // | (-2,-1) |    X    |         |    X    | ( 2,-1) |
-                // |         | (-1,-2) |         | ( 1,-2) |         |
-                //
-                // in these positions, Tail should move diagonally from `O` to `X`
-                // so that it could catch up with Head. Effectively, this means that for
-                // every two possible Head positions, there is one X position that Tail
-                // should be moving to.
-                //
-                // Here we pair up these Head positions with the diagonal direction that Tail
-                // should move toward.
-                (2, 1) | (1, 2) => {
-                    tail.move_with_direction("R");
-                    tail.move_with_direction("U");
-                }
-                (-2, 1) | (-1, 2) => {
-                    tail.move_with_direction("L");
-                    tail.move_with_direction("U");
-                }
-                (2, -1) | (1, -2) => {
-                    tail.move_with_direction("R");
-                    tail.move_with_direction("D");
-                }
-                (-2, -1) | (-1, -2) => {
-                    tail.move_with_direction("L");
-                    tail.move_with_direction("D");
-                }
+                // tail moves based on distance vs head,
+                // which is the previous element in knots vector
+                let dis = knots[i - 1].distance(&(knots[i]));
+                match dis {
+                    // In part 2, it's no longer guaranteed that the same direction
+                    // could be applied when head and tail are alligned.
+                    //
+                    // From
+                    // |   |   | 2 |   |
+                    // |   | 1 |   |   |
+                    // |   |   | H |   |
+                    // |   |   |   |   |
+                    //
+                    // To
+                    // |   |   |   |   |
+                    // |   |   | 2 |   |
+                    // |   |   | 1 | H |
+                    // |   |   |   |   |
+                    //
+                    // In the example above, as 'H' moved right, '1' needed to move down + right.
+                    // This make distance between '1' and '2' to be ( 0,-2).
+                    //
+                    // So here, 2 needs to move down instead of H's original direction 'right'.
+                    (2, 0) => {
+                        knots[i].move_with_direction("R");
+                    }
+                    (-2, 0) => {
+                        knots[i].move_with_direction("L");
+                    }
+                    (0, 2) => {
+                        knots[i].move_with_direction("U");
+                    }
+                    (0, -2) => {
+                        knots[i].move_with_direction("D");
+                    }
 
-                // Do nothing in any other cases
-                _ => {}
-            }
+                    // Head could be in a Knight-Chess position away from tail after the move
+                    // shown below in coordinates.
+                    //
+                    // | (-2, 2) | (-1, 2) |         | ( 1, 2) | ( 2, 2) |
+                    // | (-2, 1) |    X    |         |    X    | ( 2, 1) |
+                    // |         |         |    O    |         |         |
+                    // | (-2,-1) |    X    |         |    X    | ( 2,-1) |
+                    // | (-2,-2) | (-1,-2) |         | ( 1,-2) | ( 2,-2) |
+                    //
+                    // in these positions, Tail should move diagonally from `O` to `X`
+                    // so that it could catch up with Head. Effectively, this means that for
+                    // every two possible Head positions, there is one X position that Tail
+                    // should be moving to.
+                    //
+                    // In part 2, the corner positions ( 2, 2) are also included as multiple
+                    // heads could all move diagonally when the relative starting position is
+                    // already diagonally.
+                    //
+                    //       Before                   After
+                    // |   |   |   |   |        |   |   |   |   |
+                    // |   |   |   |   |        |   |   | h |   |
+                    // |   |   | h |   |        |   |   | a |   |
+                    // |   |   | a |   |        |   |   | b |   |
+                    // |   | b |   |   | =====> |   | t |   |   |
+                    // | t |   |   |   |        |   |   |   |   |
+                    // |   |   |   |   |        |   |   |   |   |
+                    //
+                    // In the example above:
+                    // - 'h' moves up,                  distance from a becomes ( 0, 2)
+                    // - 'a' moves up,                  distance from b becomes ( 1, 2)
+                    // - 'b' moves diagonally up right, distance from t becomes ( 2, 2)
+                    // - 't' moves diagonally up right
+                    //
+                    // Here we pair up these Head positions with the diagonal direction that Tail
+                    // should move toward.
+                    (2, 1) | (1, 2) | (2, 2) => {
+                        knots[i].move_with_direction("R");
+                        knots[i].move_with_direction("U");
+                    }
+                    (-2, 1) | (-1, 2) | (-2, 2) => {
+                        knots[i].move_with_direction("L");
+                        knots[i].move_with_direction("U");
+                    }
+                    (2, -1) | (1, -2) | (2, -2) => {
+                        knots[i].move_with_direction("R");
+                        knots[i].move_with_direction("D");
+                    }
+                    (-2, -1) | (-1, -2) | (-2, -2) => {
+                        knots[i].move_with_direction("L");
+                        knots[i].move_with_direction("D");
+                    }
 
-            println!("After");
-            println!("H: {:?}", head);
-            println!("T: {:?}", tail);
+                    // Do nothing in any other cases
+                    _ => (),
+                }
+            } // moved all knots
 
-            unique_tail_pos.insert(format!("{}-{}", tail.x, tail.y));
-        }
-    }
+            let tail_pos = format!(
+                "{} - {}",
+                knots[knots.len() - 1].x,
+                knots[knots.len() - 1].y
+            );
+            unique_tail_pos.insert(tail_pos);
+        } // finish all moves in 1 line
+    } // finish all inputs
 
-    println!("\n-- Finished --\n");
-    println!("H: {:?}", head);
-    println!("T: {:?}", tail);
     println!("Count: {:?}", unique_tail_pos.len());
 }
