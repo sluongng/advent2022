@@ -1,13 +1,16 @@
 struct ClockCircuit {
     cycle: i32,
-    x: i32,
-    sum_signal_strength: i32,
 
+    // used for addx
+    x: i32,
     wait: u32,
     add_val: i32,
 
+    // track important cycles
     tracking_cycle_next: i32,
     tracking_cycle_step: i32,
+
+    current_line: String,
 }
 
 impl ClockCircuit {
@@ -15,33 +18,36 @@ impl ClockCircuit {
         ClockCircuit {
             cycle: 1,
             x: 1,
-            sum_signal_strength: 0,
             wait: 0,
             add_val: 0,
-            tracking_cycle_next: 20,
+            tracking_cycle_next: 40,
             tracking_cycle_step: 40,
+            current_line: "#".into(), // smol hack pls don't @ me
         }
     }
 
     fn tick(&mut self) {
-        // println!("x after cycle {}: {}", self.cycle, self.x);
         self.cycle += 1;
 
         if self.wait > 0 {
             self.wait -= 1;
         }
 
-        if self.cycle == self.tracking_cycle_next {
-            self.sum_signal_strength += self.x * self.cycle;
-            self.tracking_cycle_next += self.tracking_cycle_step;
+        let pos = self.cycle % self.tracking_cycle_step;
+        self.current_line += match pos >= self.x && pos <= self.x + 2 {
+            true => "#",
+            false => ".",
+        };
 
-            println!(
-                "during cycle {}: x={}, sum={}",
-                self.cycle, self.x, self.sum_signal_strength
-            );
+        if self.cycle == self.tracking_cycle_next {
+            if !self.current_line.is_empty() {
+                println!("{}", self.current_line);
+            }
+
+            self.current_line = "".into();
+            self.tracking_cycle_next += self.tracking_cycle_step;
         }
 
-        // println!("x before cycle {}: {}", self.cycle, self.x);
         if self.wait == 0 && self.add_val != 0 {
             self.x += self.add_val;
             self.add_val = 0;
@@ -373,6 +379,4 @@ noop",
             _ => {}
         }
     }
-
-    println!("sum: {}", c.sum_signal_strength);
 }
