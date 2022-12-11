@@ -170,7 +170,7 @@ fn main() {
         }
 
         if round == 1 || round == 20 || round % 1000 == 0 {
-            println!("\nRound: {}", round + 1);
+            println!("\nRound: {}", round);
             println!("bzn: {:?}", monkey_business);
         }
     }
