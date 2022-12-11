@@ -37,7 +37,7 @@ fn block_to_pairs(block: &str) -> Vec<(String, Option<String>)> {
 
 fn to_monkey(lines: Vec<(String, Option<String>)>) -> Monkey {
     // handle first line for Monkey's name
-    let mut m = Monkey::new(lines[0].0.clone());
+    let mut m = Monkey::new(lines[0].0.to_string());
 
     lines.iter().skip(1).for_each(|l| match l.0.as_str() {
         "Starting items" => {
@@ -62,9 +62,11 @@ fn to_monkey(lines: Vec<(String, Option<String>)>) -> Monkey {
                     .split(' ')
                     .collect::<Vec<_>>();
 
-            let lhs = tokens[0].to_owned();
-            let rhs = tokens[2].to_owned();
-            let sign = tokens[1].to_owned();
+            // Copy these tokens into new string so that we could
+            // store them within the 'op' closure later.
+            let lhs = tokens[0].to_string();
+            let sig = tokens[1].to_string();
+            let rhs = tokens[2].to_string();
 
             let op = move |n: i32| -> i32 {
                 let lh = match lhs.as_str() {
@@ -76,11 +78,12 @@ fn to_monkey(lines: Vec<(String, Option<String>)>) -> Monkey {
                     num => num.parse::<i32>().unwrap(),
                 };
 
-                match sign.as_str() {
+                match sig.as_str() {
                     "+" => lh + rh,
                     "-" => lh - rh,
                     "*" => lh * rh,
                     "/" => lh / rh,
+                    // Never happen
                     _ => 0,
                 }
             };
@@ -136,10 +139,9 @@ fn main() {
         .iter()
         .map(|m| m.divisible_test_val)
         .collect::<Vec<_>>();
-
     for m in &mut monkeys {
         for hm in &mut m.items {
-            for d in dividers.clone() {
+            for &d in dividers.iter() {
                 let result = hm.get(&0).unwrap() % d;
                 hm.insert(d, result);
             }
@@ -149,13 +151,13 @@ fn main() {
     }
 
     let mut monkey_business = vec![0; monkeys.len()];
-    for round in 0..10_000 {
+    for round in 1..=10_000 {
         for i in 0..monkeys.len() {
             monkey_business[i] += monkeys[i].items.len();
 
             while let Some(mut item) = monkeys[i].items.pop_front() {
-                for (div, val) in item.clone().iter() {
-                    item.insert(*div, (monkeys[i].op)(*val) % div);
+                for (div, val) in item.clone() {
+                    item.insert(div, (monkeys[i].op)(val) % div);
                 }
 
                 let mnk_idx = match item.get(&monkeys[i].divisible_test_val).unwrap() {
@@ -167,14 +169,13 @@ fn main() {
             }
         }
 
-        if (round + 1) == 1 || (round + 1) == 20 || (round + 1) % 1000 == 0 {
+        if round == 1 || round == 20 || round % 1000 == 0 {
             println!("\nRound: {}", round + 1);
             println!("bzn: {:?}", monkey_business);
         }
     }
 
     monkey_business.sort();
-
     println!(
         "Total bzn: {}",
         monkey_business.pop().unwrap() * monkey_business.pop().unwrap()
