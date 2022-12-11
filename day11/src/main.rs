@@ -1,13 +1,14 @@
-use std::collections::VecDeque;
+use std::collections::{HashMap, VecDeque};
 use std::fs;
 
+#[allow(dead_code)]
 struct Monkey {
     name: String,
-    items: VecDeque<i32>,
+    items: VecDeque<HashMap<i32, i32>>,
     op: Box<dyn Fn(i32) -> i32>,
     divisible_test_val: i32,
-    test_pass_monkey: i32,
-    test_fail_monkey: i32,
+    test_pass_monkey: usize,
+    test_fail_monkey: usize,
 }
 
 impl Monkey {
@@ -44,7 +45,12 @@ fn to_monkey(lines: Vec<(String, Option<String>)>) -> Monkey {
                 .unwrap()
                 .split(", ")
                 .map(|i| i.parse::<i32>().unwrap())
-                .for_each(|i| m.items.push_back(i))
+                .for_each(|i| {
+                    let mut hm: HashMap<i32, i32> = HashMap::new();
+                    hm.insert(0, i);
+
+                    m.items.push_back(hm);
+                })
         }
         "Operation" => {
             let tokens =
@@ -98,7 +104,7 @@ fn to_monkey(lines: Vec<(String, Option<String>)>) -> Monkey {
                     .split(" ")
                     .last()
                     .unwrap()
-                    .parse::<i32>()
+                    .parse::<usize>()
                     .unwrap();
         }
         "If false" => {
@@ -108,7 +114,7 @@ fn to_monkey(lines: Vec<(String, Option<String>)>) -> Monkey {
                     .split(" ")
                     .last()
                     .unwrap()
-                    .parse::<i32>()
+                    .parse::<usize>()
                     .unwrap();
         }
         _ => (),
@@ -126,28 +132,45 @@ fn main() {
         .map(to_monkey)
         .collect::<Vec<_>>();
 
-    let mut monkey_business = vec![0; monkeys.len()];
-    for iter in 0..20 {
-        println!("\nIter: {}", iter);
+    let dividers = monkeys
+        .iter()
+        .map(|m| m.divisible_test_val)
+        .collect::<Vec<_>>();
 
+    for m in &mut monkeys {
+        for hm in &mut m.items {
+            for d in dividers.clone() {
+                let result = hm.get(&0).unwrap() % d;
+                hm.insert(d, result);
+            }
+
+            hm.remove(&0);
+        }
+    }
+
+    let mut monkey_business = vec![0; monkeys.len()];
+    for round in 0..10_000 {
         for i in 0..monkeys.len() {
             monkey_business[i] += monkeys[i].items.len();
 
-            while let Some(item) = monkeys[i].items.pop_front() {
-                let level = (monkeys[i].op)(item) / 3;
+            while let Some(mut item) = monkeys[i].items.pop_front() {
+                for (div, val) in item.clone().iter() {
+                    item.insert(*div, (monkeys[i].op)(*val) % div);
+                }
 
-                let mnk_idx = match level % monkeys[i].divisible_test_val {
+                let mnk_idx = match item.get(&monkeys[i].divisible_test_val).unwrap() {
                     0 => monkeys[i].test_pass_monkey as usize,
                     _ => monkeys[i].test_fail_monkey as usize,
                 };
-                monkeys[mnk_idx].items.push_back(level);
+
+                monkeys[mnk_idx].items.push_back(item);
             }
         }
 
-        for m in monkeys.iter() {
-            println!("{}: {:?}", m.name, m.items);
+        if (round + 1) == 1 || (round + 1) == 20 || (round + 1) % 1000 == 0 {
+            println!("\nRound: {}", round + 1);
+            println!("bzn: {:?}", monkey_business);
         }
-        println!("bzn: {:?}", monkey_business);
     }
 
     monkey_business.sort();
