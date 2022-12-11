@@ -26,9 +26,9 @@ impl Monkey {
 
 fn block_to_pairs(block: &str) -> Vec<(String, Option<String>)> {
     block
-        .split("\n")
+        .split('\n')
         .map(|line| {
-            let mut temp = line.split(":").map(str::trim).map(|s| s.into());
+            let mut temp = line.split(':').map(str::trim).map(|s| s.into());
 
             (temp.next().unwrap(), temp.next())
         })
@@ -59,7 +59,7 @@ fn to_monkey(lines: Vec<(String, Option<String>)>) -> Monkey {
                     .split(" = ")
                     .nth(1)
                     .unwrap()
-                    .split(" ")
+                    .split(' ')
                     .collect::<Vec<_>>();
 
             let lhs = tokens[0].to_owned();
@@ -91,7 +91,7 @@ fn to_monkey(lines: Vec<(String, Option<String>)>) -> Monkey {
             m.divisible_test_val =
                 l.1.as_ref()
                     .unwrap()
-                    .split(" ")
+                    .split(' ')
                     .last()
                     .unwrap()
                     .parse::<i32>()
@@ -101,7 +101,7 @@ fn to_monkey(lines: Vec<(String, Option<String>)>) -> Monkey {
             m.test_pass_monkey =
                 l.1.as_ref()
                     .unwrap()
-                    .split(" ")
+                    .split(' ')
                     .last()
                     .unwrap()
                     .parse::<usize>()
@@ -111,7 +111,7 @@ fn to_monkey(lines: Vec<(String, Option<String>)>) -> Monkey {
             m.test_fail_monkey =
                 l.1.as_ref()
                     .unwrap()
-                    .split(" ")
+                    .split(' ')
                     .last()
                     .unwrap()
                     .parse::<usize>()
@@ -159,8 +159,8 @@ fn main() {
                 }
 
                 let mnk_idx = match item.get(&monkeys[i].divisible_test_val).unwrap() {
-                    0 => monkeys[i].test_pass_monkey as usize,
-                    _ => monkeys[i].test_fail_monkey as usize,
+                    0 => monkeys[i].test_pass_monkey,
+                    _ => monkeys[i].test_fail_monkey,
                 };
 
                 monkeys[mnk_idx].items.push_back(item);
