@@ -6,8 +6,10 @@ fn main() {
     let mut possible_start_points = vec![];
     let mut end_pos = (0, 0);
 
+    // parse input into a map where each tile is a numeric value of the tile's level
+    // with a side effect of collecting possible starting points and End position.
     let input = fs::read_to_string("src/input2.txt").unwrap();
-    let map = input
+    let map: Vec<Vec<usize>> = input
         .as_str()
         .trim()
         .split("\n")
@@ -26,17 +28,20 @@ fn main() {
                     }
                     _ => c,
                 })
+                // calculate level of each tile on the map
                 .map(|c| c as usize - 'a' as usize)
-                .collect::<Vec<_>>()
+                .collect()
         })
-        .collect::<Vec<_>>();
+        .collect();
 
+    // given a starting position, calculate the minimum distance to get to End position
     let get_cost = |start_pos: (usize, usize)| {
         dijkstra(
             &start_pos,
             |&(line, row)| {
                 let mut neighbors = vec![];
 
+                // conditionally include tiles above and below current tile
                 if line == 0 {
                     // down
                     neighbors.push((line + 1, row));
@@ -50,6 +55,7 @@ fn main() {
                     neighbors.push((line + 1, row));
                 }
 
+                // conditionally include tiles to the left and right of current tile
                 if row == 0 {
                     // right
                     neighbors.push((line, row + 1));
@@ -65,21 +71,25 @@ fn main() {
 
                 neighbors
                     .into_iter()
+                    // exclude tiles with level too high (more than 1) compare to current tiles
                     .filter(|&(l, r)| map[l][r] as i32 - map[line][row] as i32 <= 1)
+                    // include weight to traverse between tiles for Dijkstra
+                    // here since all tiles weighted equally, 1 should suffice
                     .map(|p| (p, 1))
                     .collect::<Vec<_>>()
             },
-            |p| p.0 == end_pos.0 && p.1 == end_pos.1,
+            |&p| p == end_pos,
         )
     };
 
+    //
     let min_cost = possible_start_points
         .iter()
         // calculate for distance to End position
         .map(|(l, r)| get_cost((*l, *r)))
         // filter for reachable results
-        .filter(|result| result.is_some())
-        .map(|i| i.unwrap())
+        .filter(Option::is_some)
+        .map(Option::unwrap)
         // discard the actual path
         .map(|(_, i)| i)
         // take the lowest result
