@@ -3,7 +3,7 @@ use std::fs;
 use pathfinding::prelude::dijkstra;
 
 fn main() {
-    let mut start_pos = (0, 0);
+    let mut possible_start_points = vec![];
     let mut end_pos = (0, 0);
 
     let input = fs::read_to_string("src/input2.txt").unwrap();
@@ -16,8 +16,8 @@ fn main() {
             line.chars()
                 .enumerate()
                 .map(|(j, c)| match c {
-                    'S' => {
-                        start_pos = (i, j);
+                    'S' | 'a' => {
+                        possible_start_points.push((i, j));
                         'a'
                     }
                     'E' => {
@@ -31,46 +31,60 @@ fn main() {
         })
         .collect::<Vec<_>>();
 
-    let result = dijkstra(
-        &start_pos,
-        |&(line, row)| {
-            let mut neighbors = vec![];
+    let get_cost = |start_pos: (usize, usize)| {
+        dijkstra(
+            &start_pos,
+            |&(line, row)| {
+                let mut neighbors = vec![];
 
-            if line == 0 {
-                // down
-                neighbors.push((line + 1, row));
-            } else if line == map.len() - 1 {
-                // up
-                neighbors.push((line - 1, row));
-            } else {
-                // up
-                neighbors.push((line - 1, row));
-                // down
-                neighbors.push((line + 1, row));
-            }
+                if line == 0 {
+                    // down
+                    neighbors.push((line + 1, row));
+                } else if line == map.len() - 1 {
+                    // up
+                    neighbors.push((line - 1, row));
+                } else {
+                    // up
+                    neighbors.push((line - 1, row));
+                    // down
+                    neighbors.push((line + 1, row));
+                }
 
-            if row == 0 {
-                // right
-                neighbors.push((line, row + 1));
-            } else if row == map[0].len() - 1 {
-                // left
-                neighbors.push((line, row - 1));
-            } else {
-                // right
-                neighbors.push((line, row + 1));
-                // left
-                neighbors.push((line, row - 1));
-            }
+                if row == 0 {
+                    // right
+                    neighbors.push((line, row + 1));
+                } else if row == map[0].len() - 1 {
+                    // left
+                    neighbors.push((line, row - 1));
+                } else {
+                    // right
+                    neighbors.push((line, row + 1));
+                    // left
+                    neighbors.push((line, row - 1));
+                }
 
-            neighbors
-                .into_iter()
-                .filter(|&(l, r)| map[l][r] as i32 - map[line][row] as i32 <= 1)
-                .map(|p| (p, 1))
-                .collect::<Vec<_>>()
-        },
-        |p| p.0 == end_pos.0 && p.1 == end_pos.1,
-    )
-    .unwrap();
+                neighbors
+                    .into_iter()
+                    .filter(|&(l, r)| map[l][r] as i32 - map[line][row] as i32 <= 1)
+                    .map(|p| (p, 1))
+                    .collect::<Vec<_>>()
+            },
+            |p| p.0 == end_pos.0 && p.1 == end_pos.1,
+        )
+    };
 
-    println!("{:?}", result);
+    let min_cost = possible_start_points
+        .iter()
+        // calculate for distance to End position
+        .map(|(l, r)| get_cost((*l, *r)))
+        // filter for reachable results
+        .filter(|result| result.is_some())
+        .map(|i| i.unwrap())
+        // discard the actual path
+        .map(|(_, i)| i)
+        // take the lowest result
+        .min()
+        .unwrap();
+
+    println!("Shortest path: {}", min_cost);
 }
