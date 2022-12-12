@@ -12,7 +12,7 @@ fn main() {
     let map: Vec<Vec<usize>> = input
         .as_str()
         .trim()
-        .split("\n")
+        .split('\n')
         .enumerate()
         .map(|(i, line)| {
             line.chars()
@@ -86,10 +86,7 @@ fn main() {
     let min_cost = possible_start_points
         .iter()
         // calculate for distance to End position
-        .map(|(l, r)| get_cost((*l, *r)))
-        // filter for reachable results
-        .filter(Option::is_some)
-        .map(Option::unwrap)
+        .filter_map(|(l, r)| get_cost((*l, *r)))
         // discard the actual path
         .map(|(_, i)| i)
         // take the lowest result
