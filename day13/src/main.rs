@@ -2,7 +2,7 @@ use serde_json::{json, Value};
 use std::fs;
 
 fn main() {
-    let input = fs::read_to_string("src/input1.txt").unwrap();
+    let input = fs::read_to_string("src/input2.txt").unwrap();
 
     let result: usize = input
         .trim()
@@ -18,7 +18,7 @@ fn main() {
         .map(|(l, r)| is_ordered((l, r)))
         .inspect(|b| println!("Is Ordered: {}\n", b))
         .enumerate()
-        .filter(|(_, b)| *b)
+        .filter(|(_, b)| *b == 1)
         .map(|(i, _)| i + 1)
         .inspect(|num| println!("Pair Num: {}", num))
         .sum();
@@ -26,25 +26,34 @@ fn main() {
     println!("result: {}", result);
 }
 
-fn is_ordered((left, right): (Value, Value)) -> bool {
+fn is_ordered((left, right): (Value, Value)) -> i32 {
     println!("Comparing: {:?} vs {:?}", left, right);
 
     match (left, right) {
-        (Value::Number(l), Value::Number(r)) => l.as_i64().unwrap() <= r.as_i64().unwrap(),
+        (Value::Number(l), Value::Number(r)) => {
+            let (l64, r64) = (l.as_i64().unwrap(), r.as_i64().unwrap());
+
+            if l64 == r64 {
+                0
+            } else if l64 < r64 {
+                1
+            } else {
+                -1
+            }
+        }
         (Value::Number(l), Value::Array(r)) => is_ordered((json!([l]), json!(r))),
         (Value::Array(l), Value::Number(r)) => is_ordered((json!(l), json!([r]))),
         (Value::Array(l), Value::Array(r)) => match (l.len(), r.len()) {
-            (0, 0) => true,
-            (0, _) => true,
-            (_, 0) => false,
-            _ => {
-                if l[0].is_i64()
-                    && r[0].is_i64()
-                    && l[0].as_i64().unwrap() == r[0].as_i64().unwrap()
-                {
-                    is_ordered((json!(l[1..l.len()]), json!(r[1..r.len()])))
+            (0, 0) => 0,
+            (0, _) => 1,
+            (_, 0) => -1,
+            (l_len, r_len) => {
+                let res = is_ordered((l[0].clone(), r[0].clone()));
+
+                if res != 0 {
+                    res
                 } else {
-                    is_ordered((l[0].clone(), r[0].clone()))
+                    is_ordered((json!(l[1..l_len]), json!(r[1..r_len])))
                 }
             }
         },
