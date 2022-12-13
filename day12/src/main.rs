@@ -1,3 +1,4 @@
+use std::collections::VecDeque;
 use std::fs;
 
 use pathfinding::prelude::dijkstra;
@@ -36,6 +37,9 @@ fn main() {
 
     // given a starting position, calculate the minimum distance to get to End position
     let get_cost = |start_pos: (usize, usize)| {
+        // TODO: Recode this to hand roll the dijkstra while starting from End position.
+        // Expect to get a map of Option<usize> distance in the end.
+        // And filter for tiles with original level being 'z - a' and get min tiles.
         dijkstra(
             &start_pos,
             |&(line, row)| {
