@@ -1,6 +1,6 @@
 use std::fs;
 
-use pathfinding::prelude::dijkstra;
+use pathfinding::prelude::bfs;
 
 fn main() {
     let mut end_pos = (0, 0);
@@ -30,7 +30,7 @@ fn main() {
         })
         .collect();
 
-    let min_cost = dijkstra(
+    let min_cost_bfs = bfs(
         &end_pos,
         |&(line, row)| {
             let mut neighbors = vec![];
@@ -66,14 +66,14 @@ fn main() {
             neighbors
                 .into_iter()
                 .filter(|&(l, r)| map[line][row] as i32 <= map[l][r] as i32 + 1)
-                .map(|p| (p, 1))
                 .collect::<Vec<_>>()
         },
         // 0 is level of an 'a' tile on the map
         |&(line, row)| map[line][row] == 0,
     )
     .unwrap()
-    .1;
+    .len()
+        - 1;
 
-    println!("Shortest path: {min_cost}");
+    println!("BFS: {min_cost_bfs}");
 }
