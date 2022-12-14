@@ -54,12 +54,19 @@ fn main() {
             })
         });
 
+        let floor = max_depth + 2;
         let mut counter = 0;
         let start_point = (500, 0);
         let mut sand = start_point;
         loop {
-            if sand.1 > max_depth {
+            if occupied_tiles.contains(&(500, 0)) {
                 break;
+            }
+
+            if sand.1 + 1 == floor {
+                occupied_tiles.insert((sand.0, sand.1 + 1));
+                occupied_tiles.insert((sand.0 - 1, sand.1 + 1));
+                occupied_tiles.insert((sand.0 + 1, sand.1 + 1));
             }
 
             if !occupied_tiles.contains(&(sand.0, sand.1 + 1)) {
