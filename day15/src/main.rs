@@ -1,10 +1,37 @@
 use std::collections::HashSet;
 
-fn main() {
-    let mut sensors = HashSet::new();
-    let mut beacons = HashSet::new();
+#[derive(Eq, PartialEq, Hash)]
+struct Position {
+    x: i32,
+    y: i32,
+}
 
-    let mut no_beacon = HashSet::new();
+struct Sensor {
+    position: Position,
+    distance: i32,
+    nearest_beacon: Position,
+}
+
+impl Sensor {
+    fn is_beacon(&self, p: &Position) -> Option<bool> {
+        let dis = (p.x - self.position.x).abs() + (p.y - self.position.y).abs();
+
+        if dis > self.distance {
+            return None;
+        }
+
+        if (p.x == self.nearest_beacon.x && p.y == self.nearest_beacon.y)
+            || (p.x == self.position.x && p.y == self.position.y)
+        {
+            return Some(false);
+        }
+
+        Some(true)
+    }
+}
+
+fn main() {
+    let mut my_sensors = Vec::new();
 
     include_str!("input2.txt").lines().for_each(|line| {
         let mut halves = line.split(": ");
@@ -19,7 +46,6 @@ fn main() {
             sensor_coordinate.next().unwrap().unwrap(),
             sensor_coordinate.next().unwrap().unwrap(),
         );
-        sensors.insert((sensor_x, sensor_y));
 
         let mut beacon_coordinate = halves
             .next()
@@ -31,35 +57,47 @@ fn main() {
             beacon_coordinate.next().unwrap().unwrap(),
             beacon_coordinate.next().unwrap().unwrap(),
         );
-        beacons.insert((beacon_x, beacon_y));
 
         let distance = (beacon_x - sensor_x).abs() + (beacon_y - sensor_y).abs();
 
-        let left_most = sensor_x - distance;
-        let right_most = sensor_x + distance;
-        // println!("Distance={distance} Horizontally running from {left_most} to {right_most}");
-
-        for x in left_most..=right_most {
-            let half = distance - (x - sensor_x).abs();
-            let up_most = sensor_y - half;
-            let down_most = sensor_y + half;
-            // println!("i={i} x={x} Vertically running from {up_most} to {down_most}");
-
-            for y in up_most..=down_most {
-                let pos = (x, y);
-
-                if sensors.contains(&pos) || beacons.contains(&pos) {
-                    continue;
-                }
-                no_beacon.insert(pos);
-            }
-        }
+        my_sensors.push(Sensor {
+            position: Position {
+                x: sensor_x,
+                y: sensor_y,
+            },
+            distance,
+            nearest_beacon: Position {
+                x: beacon_x,
+                y: beacon_y,
+            },
+        });
     });
 
-    let count = no_beacon
+    let min_x = my_sensors
         .iter()
-        .filter(|t| t.1 == 2_000_000)
-        .collect::<Vec<_>>()
-        .len();
-    println!("count is {count}");
+        .map(|s| s.position.x - s.distance)
+        .min()
+        .unwrap();
+    let max_x = my_sensors
+        .iter()
+        .map(|s| s.position.x + s.distance)
+        .max()
+        .unwrap();
+
+    let mut not_beacon = HashSet::new();
+    for x in min_x..=max_x {
+        for s in my_sensors.iter() {
+            let p = Position { x, y: 2_000_000 };
+            match s.is_beacon(&p) {
+                Some(b) => {
+                    if b {
+                        not_beacon.insert(p);
+                    }
+                }
+                None => {}
+            };
+        }
+    }
+
+    println!("count is {}", not_beacon.len());
 }
