@@ -149,30 +149,9 @@ impl Tall {
     }
 
     fn move_to_side(&mut self, direction: HDirection) {
-        let new_position: Vec<(i32, i32)> = self
-            .falling_rock
-            .clone()
-            .iter()
-            .map(|&(a, b)| {
-                let increase = match direction {
-                    HDirection::Left => 1,
-                    HDirection::Right => -1,
-                };
-                (a as i32 + increase, b as i32)
-            })
-            .collect();
-
-        let is_legal = new_position.iter().all(|&(a, b)| {
-            a >= 0
-                && b >= 0
-                && a < GAME_WIDTH as i32
-                && b < GAME_WIDTH as i32
-                && *self
-                    .chamber
-                    .get(b as usize)
-                    .unwrap()
-                    .get(a as usize)
-                    .unwrap()
+        let (new_position, is_legal) = self.move_rock(match direction {
+            HDirection::Left => (1, 0),
+            HDirection::Right => (-1, 0),
         });
 
         if is_legal {
@@ -184,12 +163,29 @@ impl Tall {
     }
 
     fn move_down(&mut self) -> bool {
+        let (new_position, is_legal) = self.move_rock((0, 1));
+
+        if is_legal {
+            self.falling_rock = new_position
+                .iter()
+                .map(|&(a, b)| (a as usize, b as usize))
+                .collect();
+
+            true
+        } else {
+            false
+        }
+    }
+
+    fn move_rock(&mut self, translation: (i32, i32)) -> (Vec<(i32, i32)>, bool) {
         let new_position: Vec<(i32, i32)> = self
             .falling_rock
             .clone()
             .iter()
-            .map(|&(a, b)| (a as i32, b as i32 + 1))
+            .map(|&(a, b)| (a as i32 + translation.0, b as i32 + translation.1))
             .collect();
+
+        // collision check
         let is_legal = new_position
             .iter()
             .map(|&(a, b)| {
@@ -206,16 +202,7 @@ impl Tall {
             })
             .all(|b| b);
 
-        if is_legal {
-            self.falling_rock = new_position
-                .iter()
-                .map(|&(a, b)| (a as usize, b as usize))
-                .collect();
-
-            true
-        } else {
-            false
-        }
+        (new_position, is_legal)
     }
 }
 
