@@ -3,7 +3,7 @@ use std::iter::Cycle;
 use std::vec::IntoIter;
 
 const GAME_WIDTH: usize = 7;
-const ROCK_COUNT: usize = 2022;
+const MAX_ROCK_COUNT: usize = 2022;
 
 #[derive(Copy, Clone)]
 enum RockKind {
@@ -14,6 +14,7 @@ enum RockKind {
     Square,
 }
 
+#[derive(Copy, Clone)]
 enum HDirection {
     Left,
     Right,
@@ -21,14 +22,15 @@ enum HDirection {
 
 struct Tall {
     chamber: Vec<Vec<bool>>,
-
+    rock_count: usize,
     falling_rock: Vec<(usize, usize)>,
 
-    rocks: Cycle<IntoIter<RockKind>>,
+    future_rocks: Cycle<IntoIter<RockKind>>,
+    future_moves: Cycle<IntoIter<HDirection>>,
 }
 
 impl Tall {
-    fn new() -> Self {
+    fn new(input: &str) -> Self {
         let rocks = vec![
             RockKind::Line,
             RockKind::Plus,
@@ -39,9 +41,50 @@ impl Tall {
 
         Self {
             chamber: Vec::new(),
+            rock_count: 0,
             falling_rock: Vec::new(),
 
-            rocks: rocks.into_iter().cycle(),
+            future_rocks: rocks.into_iter().cycle(),
+            future_moves: input
+                .chars()
+                .map(|c| match c {
+                    '<' => HDirection::Left,
+                    '>' => HDirection::Right,
+                    n => {
+                        panic!("unexpected input: {n}");
+                    }
+                })
+                .collect::<Vec<_>>()
+                .into_iter()
+                .cycle(),
+        }
+    }
+
+    fn tick(&mut self) -> bool {
+        if self.rock_count == 0 {
+            self.add_rock();
+        }
+
+        let h_move = self.future_moves.next().unwrap();
+        self.move_to_side(h_move);
+        if !self.move_down() {
+            self.add_rock();
+            self.rock_count += 1;
+        }
+
+        if self.rock_count < MAX_ROCK_COUNT {
+            // Trim empty lines at top because
+            // we will be injecting them when we add new rocks.
+            self.chamber = self
+                .chamber
+                .clone()
+                .into_iter()
+                .skip_while(|line| line.iter().all(|&cell| cell))
+                .collect::<Vec<_>>();
+
+            true
+        } else {
+            false
         }
     }
 
@@ -49,7 +92,7 @@ impl Tall {
         self.chamber.push(vec![false; GAME_WIDTH]);
         self.chamber.push(vec![false; GAME_WIDTH]);
 
-        match self.rocks.next() {
+        match self.future_rocks.next() {
             Some(RockKind::Line) => {
                 vec![
                     //    0      1      2      3     4       5     6
@@ -163,7 +206,7 @@ impl Tall {
     }
 
     fn move_down(&mut self) -> bool {
-        let (new_position, is_legal) = self.move_rock((0, 1));
+        let (new_position, is_legal) = self.move_rock((0, -1));
 
         if is_legal {
             self.falling_rock = new_position
@@ -207,5 +250,11 @@ impl Tall {
 }
 
 fn main() {
-    println!("Hello, world!");
+    let mut tall = Tall::new(include_str!("input1.txt").trim());
+
+    while tall.tick() {
+        // tick
+    }
+
+    println!("Height: {}", tall.chamber.len());
 }
