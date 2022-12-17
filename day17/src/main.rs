@@ -1,3 +1,4 @@
+#![allow(dead_code)]
 use std::iter::Cycle;
 use std::vec::IntoIter;
 
@@ -11,6 +12,11 @@ enum RockKind {
     RevEl,
     StraightLine,
     Square,
+}
+
+enum HDirection {
+    Left,
+    Right,
 }
 
 struct Tall {
@@ -52,7 +58,7 @@ impl Tall {
                 .into_iter()
                 .for_each(|line| self.chamber.push(line));
 
-                let current_height = self.chamber.len();
+                let current_height = self.chamber.len() - 1;
                 self.falling_rock = vec![
                     (2, current_height),
                     (3, current_height),
@@ -70,7 +76,7 @@ impl Tall {
                 .into_iter()
                 .for_each(|line| self.chamber.push(line));
 
-                let current_height = self.chamber.len();
+                let current_height = self.chamber.len() - 1;
                 self.falling_rock = vec![
                     (3, current_height),
                     (2, current_height - 1),
@@ -93,7 +99,7 @@ impl Tall {
                 .rev()
                 .for_each(|line| self.chamber.push(line));
 
-                let current_height = self.chamber.len();
+                let current_height = self.chamber.len() - 1;
                 self.falling_rock = vec![
                     (4, current_height),
                     (4, current_height - 1),
@@ -113,7 +119,7 @@ impl Tall {
                 .into_iter()
                 .for_each(|line| self.chamber.push(line));
 
-                let current_height = self.chamber.len();
+                let current_height = self.chamber.len() - 1;
                 self.falling_rock = vec![
                     (2, current_height),
                     (2, current_height - 1),
@@ -130,7 +136,7 @@ impl Tall {
                 .into_iter()
                 .for_each(|line| self.chamber.push(line));
 
-                let current_height = self.chamber.len();
+                let current_height = self.chamber.len() - 1;
                 self.falling_rock = vec![
                     (2, current_height),
                     (3, current_height),
@@ -139,6 +145,76 @@ impl Tall {
                 ];
             }
             _ => {}
+        }
+    }
+
+    fn move_to_side(&mut self, direction: HDirection) {
+        let new_position: Vec<(i32, i32)> = self
+            .falling_rock
+            .clone()
+            .iter()
+            .map(|&(a, b)| {
+                let increase = match direction {
+                    HDirection::Left => 1,
+                    HDirection::Right => -1,
+                };
+                (a as i32 + increase, b as i32)
+            })
+            .collect();
+
+        let is_legal = new_position.iter().all(|&(a, b)| {
+            a >= 0
+                && b >= 0
+                && a < GAME_WIDTH as i32
+                && b < GAME_WIDTH as i32
+                && *self
+                    .chamber
+                    .get(b as usize)
+                    .unwrap()
+                    .get(a as usize)
+                    .unwrap()
+        });
+
+        if is_legal {
+            self.falling_rock = new_position
+                .iter()
+                .map(|&(a, b)| (a as usize, b as usize))
+                .collect();
+        }
+    }
+
+    fn move_down(&mut self) -> bool {
+        let new_position: Vec<(i32, i32)> = self
+            .falling_rock
+            .clone()
+            .iter()
+            .map(|&(a, b)| (a as i32, b as i32 + 1))
+            .collect();
+        let is_legal = new_position
+            .iter()
+            .map(|&(a, b)| {
+                a >= 0
+                    && b >= 0
+                    && a < GAME_WIDTH as i32
+                    && b < GAME_WIDTH as i32
+                    && *self
+                        .chamber
+                        .get(b as usize)
+                        .unwrap()
+                        .get(a as usize)
+                        .unwrap()
+            })
+            .all(|b| b);
+
+        if is_legal {
+            self.falling_rock = new_position
+                .iter()
+                .map(|&(a, b)| (a as usize, b as usize))
+                .collect();
+
+            true
+        } else {
+            false
         }
     }
 }
