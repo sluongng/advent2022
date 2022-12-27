@@ -1,4 +1,4 @@
-use std::{collections::HashMap, vec};
+use std::collections::{HashMap, HashSet};
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 struct Point {
@@ -8,11 +8,11 @@ struct Point {
 }
 
 impl Point {
-    fn new(coords: Vec<isize>) -> Point {
+    fn new(coords: (isize, isize, isize)) -> Point {
         Point {
-            x: coords[0],
-            y: coords[1],
-            z: coords[2],
+            x: coords.0,
+            y: coords.1,
+            z: coords.2,
         }
     }
 
@@ -40,12 +40,15 @@ impl Plane {
 #[derive(Debug, Clone)]
 struct Cube {
     origin: Point,
-    #[allow(dead_code)]
-    points: Vec<Point>,
 }
 
 impl Cube {
     fn new(origin: Point) -> Cube {
+        Cube { origin }
+    }
+
+    #[allow(dead_code)]
+    fn points(&self) -> Vec<Point> {
         let mut points = vec![
             (0, 0, 0),
             // 1 plus
@@ -59,16 +62,12 @@ impl Cube {
             // opposite corners
             (1, 1, 1),
         ]
-        .iter()
-        .map(|coor| Point {
-            x: origin.x + coor.0,
-            y: origin.y + coor.1,
-            z: origin.z + coor.2,
-        })
+        .into_iter()
+        .map(Point::new)
         .collect::<Vec<_>>();
         points.sort();
 
-        Cube { origin, points }
+        points
     }
 
     fn planes(&self) -> Vec<Plane> {
@@ -98,24 +97,28 @@ fn main() {
         .trim()
         .lines()
         .map(|line| {
-            line.split(',')
-                .map(|i| i.parse::<isize>().unwrap())
-                .collect::<Vec<_>>()
+            let mut it = line.split(',').map(|i| i.parse::<isize>().unwrap());
+
+            (it.next().unwrap(), it.next().unwrap(), it.next().unwrap())
         })
         .map(Point::new)
         .map(Cube::new)
         .collect();
 
-    let result = cubes
-        .iter()
-        .flat_map(|c| c.planes())
-        .fold(HashMap::new(), |mut hm, plane| {
-            *hm.entry(plane).or_insert(0) += 1;
-            hm
-        })
+    let plane_counts =
+        cubes
+            .iter()
+            .flat_map(|c| c.planes())
+            .fold(HashMap::new(), |mut hm, plane| {
+                *hm.entry(plane).or_insert(0) += 1;
+                hm
+            });
+
+    let outer_planes = plane_counts
         .iter()
         .filter(|(_, &count)| count == 1)
-        .count();
+        .map(|(p, _)| p)
+        .collect::<HashSet<_>>();
 
-    println!("{result:?}");
+    println!("{:?}", outer_planes.len());
 }
