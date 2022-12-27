@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::{collections::HashMap, vec};
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 struct Point {
@@ -15,6 +15,14 @@ impl Point {
             z: coords[2],
         }
     }
+
+    fn from_origin(origin: &Point, distance: (isize, isize, isize)) -> Point {
+        Point {
+            x: origin.x + distance.0,
+            y: origin.y + distance.1,
+            z: origin.z + distance.2,
+        }
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
@@ -23,22 +31,22 @@ struct Plane {
 }
 
 impl Plane {
-    fn new(points: Vec<Point>) -> Plane {
-        let mut ps = points.clone();
-        ps.sort();
-
-        Plane { points: ps }
+    fn new(mut points: Vec<Point>) -> Plane {
+        points.sort();
+        Plane { points }
     }
 }
 
 #[derive(Debug, Clone)]
 struct Cube {
+    origin: Point,
+    #[allow(dead_code)]
     points: Vec<Point>,
 }
 
 impl Cube {
-    fn new(point: Point) -> Cube {
-        let points = vec![
+    fn new(origin: Point) -> Cube {
+        let mut points = vec![
             (0, 0, 0),
             // 1 plus
             (1, 0, 0),
@@ -53,83 +61,40 @@ impl Cube {
         ]
         .iter()
         .map(|coor| Point {
-            x: point.x + coor.0,
-            y: point.y + coor.1,
-            z: point.z + coor.2,
+            x: origin.x + coor.0,
+            y: origin.y + coor.1,
+            z: origin.z + coor.2,
         })
         .collect::<Vec<_>>();
+        points.sort();
 
-        Cube { points }
+        Cube { origin, points }
     }
 
     fn planes(&self) -> Vec<Plane> {
         vec![
-            // (0, 0, 0),
-            // (0, 1, 0),
-            // (0, 0, 1),
-            // (0, 1, 1),
-            Plane::new(vec![
-                self.points[0],
-                self.points[2],
-                self.points[3],
-                self.points[5],
-            ]),
-            // (0, 0, 0),
-            // (1, 0, 0),
-            // (0, 1, 0),
-            // (1, 1, 0),
-            Plane::new(vec![
-                self.points[0],
-                self.points[1],
-                self.points[2],
-                self.points[4],
-            ]),
-            // (0, 0, 0),
-            // (1, 0, 0),
-            // (0, 0, 1),
-            // (1, 0, 1),
-            Plane::new(vec![
-                self.points[0],
-                self.points[1],
-                self.points[3],
-                self.points[6],
-            ]),
-            // (0, 0, 1),
-            // (0, 1, 1),
-            // (1, 0, 1),
-            // (1, 1, 1),
-            Plane::new(vec![
-                self.points[3],
-                self.points[5],
-                self.points[6],
-                self.points[7],
-            ]),
-            // (0, 1, 0),
-            // (1, 1, 0),
-            // (0, 1, 1),
-            // (1, 1, 1),
-            Plane::new(vec![
-                self.points[2],
-                self.points[4],
-                self.points[5],
-                self.points[7],
-            ]),
-            // (1, 0, 0),
-            // (1, 1, 0),
-            // (1, 0, 1),
-            // (1, 1, 1),
-            Plane::new(vec![
-                self.points[1],
-                self.points[4],
-                self.points[6],
-                self.points[7],
-            ]),
+            // Planes that are attached to (0, 0, 0)
+            vec![(0, 0, 0), (0, 1, 0), (0, 0, 1), (0, 1, 1)],
+            vec![(0, 0, 0), (1, 0, 0), (0, 1, 0), (1, 1, 0)],
+            vec![(0, 0, 0), (1, 0, 0), (0, 0, 1), (1, 0, 1)],
+            // Planes that are attached to (1, 1, 1)
+            vec![(0, 0, 1), (0, 1, 1), (1, 0, 1), (1, 1, 1)],
+            vec![(0, 1, 0), (1, 1, 0), (0, 1, 1), (1, 1, 1)],
+            vec![(1, 0, 0), (1, 1, 0), (1, 0, 1), (1, 1, 1)],
         ]
+        .iter()
+        .map(|v| {
+            v.iter()
+                .map(|&distance| Point::from_origin(&self.origin, distance))
+                .collect()
+        })
+        .map(Plane::new)
+        .collect()
     }
 }
 
 fn main() {
-    let cubes = include_str!("input2.txt")
+    let cubes: Vec<_> = include_str!("input1.txt")
         .trim()
         .lines()
         .map(|line| {
@@ -139,6 +104,10 @@ fn main() {
         })
         .map(Point::new)
         .map(Cube::new)
+        .collect();
+
+    let result = cubes
+        .iter()
         .flat_map(|c| c.planes())
         .fold(HashMap::new(), |mut hm, plane| {
             *hm.entry(plane).or_insert(0) += 1;
@@ -148,5 +117,5 @@ fn main() {
         .filter(|(_, &count)| count == 1)
         .count();
 
-    println!("{:?}", cubes);
+    println!("{result:?}");
 }
