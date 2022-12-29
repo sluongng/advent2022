@@ -176,13 +176,18 @@ fn main() {
         p.clone()
             .points
             .into_iter()
+            // generate a combinations of 2 points out of 4
             .combinations(2)
+            // filter out diagonals
             .filter(|ps| ps[0].dist_from(&ps[1]) == 1)
+            // generate a set of planes attached to each edge
             .map(|pair| Point::planes_from_edge(&pair[0], &pair[1]))
             .flat_map(|v| {
                 let res = v
                     .into_iter()
+                    // skip origin plane
                     .filter(|p| *p != original_plane)
+                    // take only outer planes
                     .filter(|p| outer_planes.contains(p))
                     .collect_vec();
 
