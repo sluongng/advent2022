@@ -1,5 +1,8 @@
 use std::collections::{HashMap, HashSet};
 
+use itertools::Itertools;
+use pathfinding::prelude::bfs_reach;
+
 #[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 struct Point {
     x: isize,
@@ -23,6 +26,43 @@ impl Point {
             z: origin.z + distance.2,
         }
     }
+
+    fn dist_from(&self, other: &Point) -> usize {
+        self.x.abs_diff(other.x) + self.y.abs_diff(other.y) + self.z.abs_diff(other.z)
+    }
+
+    fn planes_from_edge(a: &Point, b: &Point) -> Vec<Plane> {
+        let to_plane = |seed_vec: Vec<(isize, isize, isize)>| -> Vec<Plane> {
+            seed_vec
+                .iter()
+                // creating new parallel edge by transforming current edge coordinates
+                .map(|t| {
+                    vec![
+                        Point::new((a.x + t.0, a.y + t.1, a.z + t.2)),
+                        Point::new((b.x + t.0, b.y + t.1, b.z + t.2)),
+                    ]
+                })
+                // combine 2 parallel edges to make a plane
+                .map(|mut v| {
+                    v.extend(vec![a, b]);
+                    Plane::new(v)
+                })
+                .collect_vec()
+        };
+
+        if a.x == b.x && a.y == b.y {
+            return to_plane(vec![(1, 0, 0), (-1, 0, 0), (0, 1, 0), (0, -1, 0)]);
+        }
+        if a.x == b.x && a.z == b.z {
+            return to_plane(vec![(1, 0, 0), (-1, 0, 0), (0, 0, 1), (0, 0, -1)]);
+        }
+        if a.y == b.y && a.z == b.z {
+            return to_plane(vec![(0, 1, 0), (0, -1, 0), (0, 0, 1), (0, 0, -1)]);
+        }
+
+        // should not happen
+        panic!("should not happen")
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
@@ -37,7 +77,7 @@ impl Plane {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 struct Cube {
     origin: Point,
 }
@@ -64,7 +104,7 @@ impl Cube {
         ]
         .into_iter()
         .map(Point::new)
-        .collect::<Vec<_>>();
+        .collect_vec();
         points.sort();
 
         points
@@ -88,7 +128,7 @@ impl Cube {
                 .collect()
         })
         .map(Plane::new)
-        .collect()
+        .collect_vec()
     }
 }
 
@@ -116,9 +156,51 @@ fn main() {
 
     let outer_planes = plane_counts
         .iter()
-        .filter(|(_, &count)| count == 1)
-        .map(|(p, _)| p)
+        .filter(|&(_, &count)| count == 1)
+        .map(|(p, _)| p.clone())
         .collect::<HashSet<_>>();
 
-    println!("{:?}", outer_planes.len());
+    let min_outer_plane = cubes
+        .iter()
+        .min()
+        .unwrap()
+        .planes()
+        .into_iter()
+        .filter(|p| outer_planes.contains(p))
+        .min()
+        .unwrap();
+
+    let reachable = bfs_reach(min_outer_plane.clone(), |p| {
+        let original_plane = p.clone();
+
+        p.clone()
+            .points
+            .into_iter()
+            .combinations(2)
+            .filter(|ps| ps[0].dist_from(&ps[1]) == 1)
+            .map(|pair| Point::planes_from_edge(&pair[0], &pair[1]))
+            .flat_map(|v| {
+                let res = v
+                    .into_iter()
+                    .filter(|p| *p != original_plane)
+                    .filter(|p| outer_planes.contains(p))
+                    .collect_vec();
+
+                // An edge could only have up to 4 attached planes.
+                // Deducting the original plane, there could only be 3 planes attached.
+                //
+                // If all 3 planes and the original plan are outer_planes, the edge is
+                // where 2 cubes touch. To avoid further traversal using this edge.
+                if res.len() == 3 {
+                    return vec![];
+                }
+
+                res
+            })
+            .collect_vec()
+    })
+    .collect_vec();
+
+    println!("Reachable: {}", reachable.len());
+    println!("\nFinal: {:?}", min_outer_plane);
 }
